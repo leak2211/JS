@@ -68,7 +68,7 @@ function destroy() {
   let labels = this.data.getColumn(0);
 
   // Colour to use for each category.
-  let colours = ['pink', 'blue'];
+  let colours = ['pink', 'blue', 'red', 'green', 'purple'];
 
   // Make a title.
   let title = question;
