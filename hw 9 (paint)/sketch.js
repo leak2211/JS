@@ -1,9 +1,9 @@
 let previousMouseX, previousMouseY;
-let canvas;
-let selectMode = 0; // 0 - рисование вручную, 1 - рисование фигур, 2 - изменение фона, 3 - ластик
-let penButton, eraserButton, backButton, widthSelect, colorSelect, shapeButton, clearButton, saveButton;
-let forShape = false;  // Флаг для рисования фигур
-let shapeSelect;  // Селектор фигур
+let canvas, selectArea;
+let selectMode = 0;
+let shapeButton, clearButton, penButton, backButton, widthSelect, colorSelect, shapeSelect, saveButton;
+let forShape = false; 
+let currentShape = []; 
 
 const colorMap = {
   '🔴': 'red',
@@ -18,27 +18,27 @@ const colorMap = {
 
 function setup() {
   canvas = createCanvas(800, 800);
-  background(200);  // Белый фон
+  background(200); //холст
   noFill();
   stroke(0);
 
   // Создание кнопок
-  penButton = createButton('Pen').position(810, 80);
-  eraserButton = createButton('Eraser').position(810, 130);  // Кнопка для ластика
-  backButton = createButton('Background').position(810, 155);
+  penButton = createButton('Pen').position(810, 80);  // ручка
+  eraserButton = createButton('Eraser').position(810, 125);  // ластик
+  backButton = createButton('Background').position(810, 150); // фон
   widthSelect = createInput('10').position(855, 80).size(30);  // Толщина линии
-  colorSelect = createColorSelect().position(810, 105);
-  shapeButton = createButton('Shape').position(810, 180);
-  clearButton = createButton('Clear').position(810, 205);
-  saveButton = createButton('Save').position(810, 230);  // Кнопка для сохранения
+  colorSelect = createColorSelect().position(810, 105); // силектор
+  shapeButton = createButton('Shape').position(810, 175); // ФИГУРЫ
+  clearButton = createButton('Clear').position(810, 200); // ОЧИСТКА
+  saveButton = createButton('Save').position(810, 224);  //  сохранение
 
   // Обработчики кнопок
-  penButton.mousePressed(() => selectMode = 0);  // Включаем режим рисования ручкой
-  eraserButton.mousePressed(() => selectMode = 3);  // Включаем режим ластика
-  backButton.mousePressed(() => selectMode = 2);  // Включаем режим изменения фона
-  clearButton.mousePressed(() => background(200));  // Очищаем холст
-  saveButton.mousePressed(saveCanvasImage);  // Сохранение изображения
-  shapeButton.mousePressed(() => showShapeSelect());  // Показать селектор форм
+  penButton.mousePressed(() => selectMode = 0); // Обработчик для кнопки ручки
+  backButton.mousePressed(() => selectMode = 2);  // Обработчик для кнопки ручки
+  clearButton.mousePressed(() => background(200));  // Обработчик для кнопки фон
+  shapeButton.mousePressed(() => showShapeSelect());     // Обработчик для кнопки фигуры 
+  eraserButton.mousePressed(() => selectMode = 3);    // Обработчик для кнопки ластика 
+  saveButton.mousePressed(saveCanvasImage);  // Обработчик для кнопки сохранения
 }
 
 function draw() {
@@ -47,19 +47,24 @@ function draw() {
 
   if (mouseIsPressed) {
     if (selectMode === 0) {
-      drawFreehand(color);  // Рисуем вручную
+      drawFreehand(color);
     } else if (selectMode === 1) {
-      drawShape(color);  // Рисуем фигуры
+      drawShape(color);
     } else if (selectMode === 2) {
-      fillBackground(color);  // Меняем фон
-    } else if (selectMode === 3) {
-      erase();  // Используем ластик
+      fillBackground(color);
+    }
+    else if (selectMode === 3) {
+      eraserFreehand(200);
     }
   }
 }
 
-function mousePressed() {
-  // Этот метод будет запускаться при нажатии кнопки мыши
+function eraserFreehand(color) {
+  strokeWeight(widthSelect.value());
+  stroke(200);
+  line(previousMouseX, previousMouseY, mouseX, mouseY);
+  previousMouseX = mouseX;
+  previousMouseY = mouseY;
 }
 
 function mouseReleased() {
@@ -67,7 +72,7 @@ function mouseReleased() {
   forShape = false;  // Сброс флага после завершения рисования
 }
 
-// Функции для рисования
+// Функции для рисования и выбора
 
 function createColorSelect() {
   let select = createSelect();
@@ -84,14 +89,6 @@ function drawFreehand(color) {
   previousMouseY = mouseY;
 }
 
-function erase() {
-  strokeWeight(widthSelect.value());
-  stroke(200);  // Цвет фона, чтобы стереть
-  line(previousMouseX, previousMouseY, mouseX, mouseY);
-  previousMouseX = mouseX;
-  previousMouseY = mouseY;
-}
-
 function drawShape(color) {
   fill(color);
   noStroke();
@@ -101,11 +98,13 @@ function drawShape(color) {
     drawRectangle();
   } else if (shape === '⚫️') {
     drawEllipse();
-  } else if (shape === '▲') {
+  } else if (shape === '🔺') {  
     drawTriangle();
   }
 }
 
+
+// Функция для рисования круга
 function drawRectangle() {
   if (forShape) {
     rect(previousMouseX, previousMouseY, mouseX - previousMouseX, mouseY - previousMouseY);
@@ -116,6 +115,7 @@ function drawRectangle() {
   }
 }
 
+// Функция для рисования прямоугольника
 function drawEllipse() {
   if (forShape) {
     ellipse(previousMouseX, previousMouseY, mouseX - previousMouseX, mouseY - previousMouseY);
@@ -129,16 +129,14 @@ function drawEllipse() {
 // Функция для рисования треугольника
 function drawTriangle() {
   if (forShape) {
-    let base = mouseX - previousMouseX;
-    let height = mouseY - previousMouseY;
     let x1 = previousMouseX;
     let y1 = previousMouseY;
     let x2 = mouseX;
     let y2 = mouseY;
-    let x3 = (previousMouseX + mouseX) / 2;
-    let y3 = previousMouseY - height;  // Треугольник с основанием по горизонтали
+    let x3 = (previousMouseX + mouseX) / 2;  // Середина между начальной и конечной точкой
+    let y3 = previousMouseY - (mouseY - previousMouseY);  // Высота для треугольника
 
-    triangle(x1, y1, x2, y2, x3, y3);
+    triangle(x1, y1, x2, y2, x3, y3);  // Рисуем треугольник
   } else {
     previousMouseX = mouseX;
     previousMouseY = mouseY;
@@ -153,12 +151,13 @@ function fillBackground(color) {
 
 function showShapeSelect() {
   selectMode = 1;
-  shapeSelect = createSelect().position(870, 180);
+  shapeSelect = createSelect().position(870, 175);
   shapeSelect.option('⬛');  // Прямоугольник
   shapeSelect.option('⚫️'); // Окружность
-  shapeSelect.option('▲'); // Треугольник
+  shapeSelect.option('🔺'); // Треугольник
 }
 
+// Функция для сохранения изображения
 function saveCanvasImage() {
   saveCanvas(canvas, 'my_drawing', 'png');  // Сохранение холста в формате PNG
 }
